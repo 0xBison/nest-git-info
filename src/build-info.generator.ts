@@ -1,43 +1,31 @@
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import { GitInfoModuleOptions } from './git-info.options';
 
-export function generateBuildInfo(options: GitInfoModuleOptions = {}) {
-  // Get environment variable names from options or use defaults
-  const {
-    gitSHA = 'GITHUB_SHA',
-    gitBranch = 'GITHUB_REF_NAME',
-    additionalVars = {},
-  } = options.environmentVariables || {};
+export function generateBuildInfo() {
+  // Get package version
+  const packageJson = require(join(process.cwd(), 'package.json'));
+
+  // Get environment variable names or use defaults
+  const gitSHAVar = process.env.GIT_INFO_SHA_VAR || 'GITHUB_SHA';
+  const gitBranchVar = process.env.GIT_INFO_BRANCH_VAR || 'GITHUB_REF_NAME';
 
   // Build the base info
   const buildInfo = {
-    githubSHA: process.env[gitSHA] || 'development',
-    githubBranch: process.env[gitBranch] || 'development',
+    version: packageJson.version,
+    githubSHA: process.env[gitSHAVar] || 'development',
+    githubBranch: process.env[gitBranchVar] || 'development',
     buildTime: new Date().toISOString(),
   };
 
   // Add additional environment variables
-  const additionalInfo = Object.entries(additionalVars).reduce(
-    (acc, [key, envVar]) => ({
-      ...acc,
-      [key]: process.env[envVar] || 'unknown',
-    }),
-    {}
-  );
-
-  // Merge with custom build info if provided
-  const customInfo = options.buildInfoGenerator
-    ? options.buildInfoGenerator()
-    : {};
+  const additionalInfo = parseAdditionalVarsFromEnv();
 
   const finalBuildInfo = {
     ...buildInfo,
     ...additionalInfo,
-    ...customInfo,
   };
 
-  // Write to src instead of dist
+  // Write to src directory
   const srcPath = join(process.cwd(), 'src');
   const buildInfoPath = join(srcPath, 'build-info.json');
 
@@ -48,4 +36,17 @@ export function generateBuildInfo(options: GitInfoModuleOptions = {}) {
 
   // Write build info
   writeFileSync(buildInfoPath, JSON.stringify(finalBuildInfo, null, 2));
+}
+
+function parseAdditionalVarsFromEnv() {
+  const prefix = 'GIT_INFO_ADD_';
+  return Object.entries(process.env)
+    .filter(([key]) => key.startsWith(prefix))
+    .reduce(
+      (acc, [key, envVarName]) => ({
+        ...acc,
+        [key.replace(prefix, '')]: process.env[envVarName] || 'unknown',
+      }),
+      {}
+    );
 }

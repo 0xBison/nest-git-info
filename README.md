@@ -1,6 +1,6 @@
 # nest-git-info
 
-A NestJS module that exposes Git build information via an API endpoint. Automatically captures and exposes Git metadata during your build process which is useful debugging which version of the code is running in live environments.
+A NestJS module that exposes Git build information via an API endpoint. Automatically captures and exposes Git metadata during your build process which is useful for debugging which version of the code is running in live environments.
 
 ## Installation
 
@@ -30,15 +30,13 @@ export class AppModule {}
 }
 ```
 
-3. Make sure you have the following in your `nest-cli.json` to ensure the build info is compiled into the build output.
+3. Add the build info file to your `.gitignore`:
 
-```json
-  "assets": [
-    "**/*.json"
-  ]
+```gitignore
+src/build-info.json
 ```
 
-like so:
+4. Make sure you have the following in your `nest-cli.json` to ensure the build info is compiled into the build output:
 
 ```json
 {
@@ -69,24 +67,6 @@ GitInfoModule.register({
   // Feature flags
   disableSwagger: false,             // Default: false
   disableController: false,          // Default: false
-  
-  // Environment variable configuration
-  environmentVariables: {
-    // Override default environment variable names
-    gitSHA: 'CUSTOM_SHA_VAR',        // Default: 'GITHUB_SHA'
-    gitBranch: 'CUSTOM_BRANCH_VAR',  // Default: 'GITHUB_REF_NAME'
-    
-    // Add custom environment variables
-    additionalVars: {
-      DEPLOY_ENVIRONMENT: 'NODE_ENV',
-      CUSTOM_VAR: 'MY_CUSTOM_ENV_VAR',
-    },
-  },
-  
-  // Custom build info generator
-  buildInfoGenerator: () => ({
-    customField: 'value',
-  }),
 });
 ```
 
@@ -102,58 +82,102 @@ GitInfoModule.registerAsync({
 });
 ```
 
-### Conditional Controller
+### Environment Variables
 
-You can conditionally enable/disable the controller based on your environment:
+The module uses environment variables for configuration:
+
+1. Git Information Variables (defaults):
+
+- `GITHUB_SHA` - The commit SHA
+- `GITHUB_REF_NAME` - The branch name
+
+2. Override Default Variable Names:
+
+- `GIT_INFO_SHA_VAR` - Override the SHA environment variable name
+- `GIT_INFO_BRANCH_VAR` - Override the branch environment variable name
+
+3. Additional Custom Variables:
+
+- `GIT_INFO_ADD_*` - Add custom environment variables to the output
+  Example: `GIT_INFO_ADD_ENVIRONMENT=NODE_ENV` will add the NODE_ENV value to the output
+
+### Example Usage
+
+Basic setup with GitHub Actions (uses default environment variables):
 
 ```typescript
-GitInfoModule.register({
-  disableController: process.env.NODE_ENV === 'production',
-});
-
-// Or use the service directly:
-import { GitInfoService } from 'nest-git-info';
-
-@Injectable()
-export class MyService {
-  constructor(private gitInfoService: GitInfoService) {}
-
-  someMethod() {
-    const buildInfo = this.gitInfoService.getVersionInfo();
-    // Use build info...
-  }
-}
+@Module({
+  imports: [GitInfoModule.register()]
+})
+export class AppModule {}
 ```
 
-## GitHub Actions Integration
+### Example Usage - Runtime Controller Configuration
 
-This package automatically works with GitHub Actions as it uses the following environment variables that GitHub Actions injects during builds:
-GITHUB_SHA: The commit SHA that triggered the workflow
-GITHUB_REF_NAME: The branch or tag name that triggered the workflow
-These variables are automatically injected by GitHub Actions during the build process, so you don't need to configure anything special.
+While environment variables control the build information, you might want to configure how the API endpoint behaves at runtime. For this, use `registerAsync`:
 
-## API Response Example
+```typescript
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    GitInfoModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        // Disable the controller in production
+        disableController: configService.get('NODE_ENV') === 'production',
+        // Use a custom endpoint path from configuration
+        routePath: configService.get('GIT_INFO_PATH') || 'git-info',
+        // Disable Swagger in production
+        disableSwagger: configService.get('NODE_ENV') === 'production'
+      }),
+      inject: [ConfigService],
+    }),
+  ]
+})
+export class AppModule {}
+```
+
+This allows you to:
+- Configure the API endpoint path dynamically
+- Enable/disable the controller based on environment
+- Control Swagger documentation
+- Integrate with your application's configuration system (ConfigService, etc.)
+
+Custom environment variables examples:
+
+```bash
+# In your CI/CD environment or .env file
+GIT_INFO_SHA_VAR=CUSTOM_SHA
+GIT_INFO_BRANCH_VAR=CUSTOM_BRANCH
+GIT_INFO_ADD_ENVIRONMENT=NODE_ENV
+GIT_INFO_ADD_REGION=AWS_REGION
+```
+
+### API Response Example
 
 ```json
 {
   "version": "1.0.0",
   "githubSHA": "a1b2c3d4e5f6...",
   "githubBranch": "main",
-  "buildTime": "2024-01-01T00:00:00.000Z"
+  "buildTime": "2024-01-01T00:00:00.000Z",
+  "ENVIRONMENT": "production",
+  "REGION": "us-east-1"
 }
 ```
 
+## GitHub Actions Integration
+
+This package automatically works with GitHub Actions as it uses the default environment variables that GitHub Actions injects during builds:
+
+- `GITHUB_SHA`: The commit SHA that triggered the workflow
+- `GITHUB_REF_NAME`: The branch or tag name that triggered the workflow
+
+For local development, these values will default to "development" if the environment variables aren't present.
+
 ## Swagger Support
 
-The module includes optional Swagger support. If you have @nestjs/swagger installed, the endpoint will be automatically documented. You can customize the Swagger tag:
-
-```typescript
-GitInfoModule.register({
-  swaggerTag: 'Version Information',
-});
-```
-
-If Swagger is not installed, the module will work normally without Swagger decorators.
+The module includes Swagger support out of the box if you have `@nestjs/swagger` installed. The endpoint will be automatically documented under the 'git-info' tag.
 
 ## License
 

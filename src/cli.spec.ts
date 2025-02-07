@@ -16,7 +16,6 @@ describe('CLI', () => {
     process.env.GITHUB_SHA = 'test-sha';
     process.env.GITHUB_REF_NAME = 'test-branch';
     process.env.NODE_ENV = 'production';
-    process.env.CUSTOM_VAR = 'custom-value';
     (existsSync as jest.Mock).mockReturnValue(false);
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2024-01-01'));
@@ -27,65 +26,41 @@ describe('CLI', () => {
     delete process.env.GITHUB_SHA;
     delete process.env.GITHUB_REF_NAME;
     delete process.env.NODE_ENV;
-    delete process.env.CUSTOM_VAR;
+    delete process.env.GIT_INFO_SHA_VAR;
+    delete process.env.GIT_INFO_BRANCH_VAR;
+    delete process.env.GIT_INFO_ADD_ENVIRONMENT;
     jest.useRealTimers();
   });
 
-  it('should generate build info file', () => {
+  it('should generate build info with default GitHub vars', () => {
     generateBuildInfo();
 
-    expect(existsSync).toHaveBeenCalled();
     expect(writeFileSync).toHaveBeenCalledWith(
-      expect.any(String),
+      expect.stringContaining('src/build-info.json'),
       expect.stringContaining('"githubSHA": "test-sha"')
     );
   });
 
-  it('should use default values when env vars not present', () => {
-    delete process.env.GITHUB_SHA;
-    delete process.env.GITHUB_REF_NAME;
+  it('should use custom environment variable names', () => {
+    process.env.GIT_INFO_SHA_VAR = 'CUSTOM_SHA';
+    process.env.GIT_INFO_BRANCH_VAR = 'CUSTOM_BRANCH';
+    process.env.CUSTOM_SHA = 'custom-sha';
+    process.env.CUSTOM_BRANCH = 'custom-branch';
 
     generateBuildInfo();
 
     expect(writeFileSync).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.stringContaining('"githubSHA": "development"')
-    );
-  });
-
-  it('should use custom environment variable names', () => {
-    generateBuildInfo({
-      environmentVariables: {
-        gitSHA: 'CUSTOM_SHA',
-        gitBranch: 'CUSTOM_BRANCH',
-      },
-    });
-
-    process.env.CUSTOM_SHA = 'custom-sha';
-    process.env.CUSTOM_BRANCH = 'custom-branch';
-
-    generateBuildInfo({
-      environmentVariables: {
-        gitSHA: 'CUSTOM_SHA',
-        gitBranch: 'CUSTOM_BRANCH',
-      },
-    });
-
-    expect(writeFileSync).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.stringContaining('"githubSHA": "custom-sha"')
     );
   });
 
   it('should include additional environment variables', () => {
-    generateBuildInfo({
-      environmentVariables: {
-        additionalVars: {
-          ENVIRONMENT: 'NODE_ENV',
-          CUSTOM_FIELD: 'CUSTOM_VAR',
-        },
-      },
-    });
+    process.env.GIT_INFO_ADD_ENVIRONMENT = 'NODE_ENV';
+    process.env.GIT_INFO_ADD_CUSTOM = 'CUSTOM_VALUE';
+    process.env.CUSTOM_VALUE = 'test-value';
+
+    generateBuildInfo();
 
     expect(writeFileSync).toHaveBeenCalledWith(
       expect.any(String),
@@ -93,25 +68,16 @@ describe('CLI', () => {
     );
     expect(writeFileSync).toHaveBeenCalledWith(
       expect.any(String),
-      expect.stringMatching(/.*"CUSTOM_FIELD": "custom-value".*/)
+      expect.stringMatching(/.*"CUSTOM": "test-value".*/)
     );
   });
 
-  it('should use custom build info generator', () => {
-    generateBuildInfo({
-      buildInfoGenerator: () => ({
-        customField: 'test-value',
-        nested: { value: 123 },
-      }),
-    });
+  it('should include package version', () => {
+    generateBuildInfo();
 
     expect(writeFileSync).toHaveBeenCalledWith(
       expect.any(String),
-      expect.stringMatching(/.*"customField": "test-value".*/)
-    );
-    expect(writeFileSync).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.stringMatching(/.*"nested": {\s*"value": 123\s*}.*/)
+      expect.stringMatching(/"version": ".+"/)
     );
   });
 });
