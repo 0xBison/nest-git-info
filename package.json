@@ -1,6 +1,6 @@
 {
   "name": "nest-git-info",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "NestJS module for exposing Git build information via API endpoint",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
