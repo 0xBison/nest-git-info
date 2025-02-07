@@ -24,8 +24,8 @@
   "author": "0xbison",
   "license": "MIT",
   "peerDependencies": {
-    "@nestjs/common": "^8.0.0 || ^9.0.0 || ^10.0.0",
-    "@nestjs/core": "^8.0.0 || ^9.0.0 || ^10.0.0"
+    "@nestjs/common": ">=8.0.0",
+    "@nestjs/core": ">=8.0.0"
   },
   "devDependencies": {
     "@nestjs/config": "^4.0.0",
