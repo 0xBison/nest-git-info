@@ -13,8 +13,7 @@
     "build:watch": "npm run build -- --watch",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "preversion": "git config commit.message 'release: %s'"
+    "test:cov": "jest --coverage"
   },
   "keywords": [
     "nestjs",
