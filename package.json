@@ -1,0 +1,41 @@
+{
+  "name": "nest-git-info",
+  "version": "0.0.1",
+  "description": "NestJS module for exposing Git build information via API endpoint",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "nest-git-info": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "prepare": "npm run build && chmod +x ./dist/cli.js",
+    "build:watch": "npm run build -- --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage"
+  },
+  "keywords": [
+    "nestjs",
+    "git",
+    "build-info",
+    "version"
+  ],
+  "author": "0xbison",
+  "license": "MIT",
+  "peerDependencies": {
+    "@nestjs/common": "^8.0.0 || ^9.0.0 || ^10.0.0",
+    "@nestjs/core": "^8.0.0 || ^9.0.0 || ^10.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/config": "^4.0.0",
+    "@nestjs/testing": "^10.0.0",
+    "@types/jest": "^29.0.0",
+    "@types/node": "^22.13.1",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}

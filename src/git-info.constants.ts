@@ -1,0 +1,1 @@
+export const GIT_INFO_OPTIONS = 'GIT_INFO_OPTIONS';
