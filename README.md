@@ -2,6 +2,35 @@
 
 A NestJS module that exposes Git build information via an API endpoint. Automatically captures and exposes Git metadata during your build process which is useful for debugging which version of the code is running in live environments.
 
+## What does it do?
+
+Once installed, this module:
+
+1. Automatically captures Git metadata during your build process including:
+   - Git commit SHA
+   - Branch name
+   - Build timestamp
+   - Package version
+   - Custom environment variables you specify
+
+2. Exposes this information via a REST endpoint (default: `/git-info`):
+
+```json
+{
+  "version": "1.0.0",
+  "githubSHA": "a1b2c3d4e5f6...",
+  "githubBranch": "main",
+  "buildTime": "2024-01-01T00:00:00.000Z"
+}
+```
+
+This is particularly valuable when:
+
+- Debugging production issues and need to verify which code version is deployed
+- Managing multiple environments and need to track deployments
+
+The module assumes you are using GitHub Actions, automatically capturing their environment variables during the build process.
+
 ## Installation
 
 ```bash
